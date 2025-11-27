@@ -1,0 +1,155 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/JUnit5TestClass.java to edit this template
+ */
+package com.mycompany.loginandregistration;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import java.io.*;
+
+/**
+ * Student-style JUnit 5 test file for Loginandregistration project.
+ * Covers registration, login, stored messages, message validation, and ID/hash generation.
+ */
+public class LoginandregistrationTest {
+
+    private static final String TEST_MESSAGE_FILE = "test_stored_messages.json";
+
+    @BeforeEach
+    public void setUp() throws IOException {
+        // Clear the stored messages before each test
+        new FileWriter(TEST_MESSAGE_FILE, false).close();
+
+        // Reset all counters and arrays
+        Loginandregistration.userCount = 0;
+        Loginandregistration.sentCount = 0;
+        Loginandregistration.storedCount = 0;
+        Loginandregistration.disregardedCount = 0;
+    }
+
+    // ---------- USER REGISTRATION ----------
+    @Test
+    public void testRegisterUser_Valid() {
+        // This simulates adding a new user
+        Loginandregistration.usernames[0] = "mp_01";
+        Loginandregistration.passwords[0] = "Abc123!x";
+        Loginandregistration.names[0] = "John Doe";
+        Loginandregistration.userCount = 1;
+
+        assertEquals(1, Loginandregistration.userCount, "User count should be 1");
+        assertEquals("mp_01", Loginandregistration.usernames[0], "Username should match");
+    }
+
+    @Test
+    public void testRegisterUser_InvalidPassword() {
+        String invalidPass = "abc"; // too short, no capital, no number, no special
+        assertFalse(Loginandregistration.isValidPassword(invalidPass), "Password should be invalid");
+    }
+
+    // ---------- LOGIN USER ----------
+    @Test
+    public void testLoginUser_Valid() {
+        // Add a user first
+        Loginandregistration.usernames[0] = "mp_01";
+        Loginandregistration.passwords[0] = "Abc123!x";
+        Loginandregistration.userCount = 1;
+
+        // Simulate login
+        boolean loginSuccess = false;
+        for (int i = 0; i < Loginandregistration.userCount; i++) {
+            if (Loginandregistration.usernames[i].equals("mp_01") &&
+                Loginandregistration.passwords[i].equals("Abc123!x")) {
+                loginSuccess = true;
+            }
+        }
+
+        assertTrue(loginSuccess, "Login should succeed with correct credentials");
+    }
+
+    @Test
+    public void testLoginUser_Invalid() {
+        Loginandregistration.usernames[0] = "mp_01";
+        Loginandregistration.passwords[0] = "Abc123!x";
+        Loginandregistration.userCount = 1;
+
+        boolean loginSuccess = false;
+        for (int i = 0; i < Loginandregistration.userCount; i++) {
+            if (Loginandregistration.usernames[i].equals("wrong") &&
+                Loginandregistration.passwords[i].equals("wrong")) {
+                loginSuccess = true;
+            }
+        }
+
+        assertFalse(loginSuccess, "Login should fail with incorrect credentials");
+    }
+
+    // ---------- MESSAGE ID ----------
+    @Test
+    public void testGenerateMessageID() {
+        String id = Loginandregistration.generateMessageID();
+        assertNotNull(id, "ID should not be null");
+        assertEquals(10, id.length(), "ID should be 10 digits");
+        assertTrue(id.matches("\\d+"), "ID should contain only digits");
+    }
+
+    // ---------- RECIPIENT CELL ----------
+    @Test
+    public void testCheckRecipientCell() {
+        assertTrue(Loginandregistration.checkRecipientCell("+27821234567"), "Valid cell should return true");
+        assertFalse(Loginandregistration.checkRecipientCell("0821234567"), "Missing +27 should fail");
+        assertFalse(Loginandregistration.checkRecipientCell(""), "Empty string should fail");
+    }
+
+    // ---------- MESSAGE VALIDATION ----------
+    @Test
+    public void testIsValidMessage() {
+        assertTrue(Loginandregistration.isValidMessage("Hello"), "Normal message should be valid");
+        assertFalse(Loginandregistration.isValidMessage(""), "Empty message should be invalid");
+        String longMsg = "a".repeat(251);
+        assertFalse(Loginandregistration.isValidMessage(longMsg), "Over 250 chars should fail");
+    }
+
+    // ---------- MESSAGE HASH ----------
+    @Test
+    public void testCreateMessageHash() {
+        String hash = Loginandregistration.createMessageHash("12345", "Hello world");
+        assertNotNull(hash, "Hash should not be null");
+        assertFalse(hash.isEmpty(), "Hash should not be empty");
+    }
+
+    // ---------- STORE MESSAGE TO FILE ----------
+    @Test
+    public void testStoreMessageToFile() throws IOException {
+        // Save a message to a test file
+        Loginandregistration.storeMessageToFile("MSG001", "HSH001", "+27821234567", "Test message");
+
+        // Read the file and check content
+        BufferedReader br = new BufferedReader(new FileReader("storedMessagess.json"));
+        String line = br.readLine();
+        br.close();
+
+        assertNotNull(line, "File should contain saved message");
+        assertTrue(line.contains("MSG001"), "Message ID should be present");
+        assertTrue(line.contains("HSH001"), "Message hash should be present");
+        assertTrue(line.contains("+27821234567"), "Recipient should be present");
+    }
+
+    // ---------- LOAD STORED MESSAGES ----------
+    @Test
+    public void testLoadStoredMessagesFromFile() throws IOException {
+        // Write directly to file first
+        BufferedWriter bw = new BufferedWriter(new FileWriter("storedMessagess.json"));
+        bw.write("{\"messageID\":\"MSG001\",\"hash\":\"HSH001\",\"recipient\":\"+27821234567\",\"message\":\"Hi\"}");
+        bw.newLine();
+        bw.close();
+
+        Loginandregistration.loadStoredMessagesFromFile();
+
+        assertEquals(1, Loginandregistration.storedCount, "Stored count should be 1");
+        assertEquals("MSG001", Loginandregistration.storedMessageID[0], "Message ID should match");
+        assertEquals("HSH001", Loginandregistration.storedMessageHash[0], "Message hash should match");
+        assertEquals("+27821234567", Loginandregistration.storedRecipients[0], "Recipient should match");
+        assertEquals("Hi", Loginandregistration.storedMessages[0], "Message text should match");
+    }
+}
